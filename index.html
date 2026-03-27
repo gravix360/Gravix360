@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gravix 360 — Your Digital Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --space-black: #03000a;
+    --deep-navy: #060b1a;
+    --nebula-purple: #1a0a2e;
+    --neon-cyan: #00f5ff;
+    --neon-purple: #bf00ff;
+    --neon-gold: #ffd700;
+    --star-white: #e8eeff;
+    --dim-star: #6b7a99;
+    --glow-cyan: rgba(0,245,255,0.15);
+    --glow-purple: rgba(191,0,255,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--space-black);
+    color: var(--star-white);
+    font-family: 'Exo 2', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    width: 12px; height: 12px;
+    background: var(--neon-cyan);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.1s, opacity 0.1s;
+    box-shadow: 0 0 10px var(--neon-cyan), 0 0 30px var(--neon-cyan);
+    mix-blend-mode: screen;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid rgba(0,245,255,0.5);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9998;
+    transition: transform 0.15s ease, width 0.2s, height 0.2s;
+    transform: translate(-12px, -12px);
+  }
+
+  /* Stars canvas */
+  #starsCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    padding: 20px 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(3,0,10,0.7);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0,245,255,0.1);
+  }
+
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 20px var(--neon-cyan);
+    text-decoration: none;
+    letter-spacing: 2px;
+  }
+  .logo span { color: var(--neon-purple); }
+
+  .nav-links { display: flex; gap: 36px; align-items: center; list-style: none; }
+  .nav-links a {
+    color: var(--dim-star);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    transition: color 0.3s, text-shadow 0.3s;
+    cursor: none;
+  }
+  .nav-links a:hover { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
+
+  .nav-cta {
+    background: transparent;
+    border: 1px solid var(--neon-cyan);
+    color: var(--neon-cyan) !important;
+    padding: 8px 22px;
+    border-radius: 2px;
+    transition: background 0.3s, box-shadow 0.3s !important;
+    cursor: none;
+  }
+  .nav-cta:hover {
+    background: rgba(0,245,255,0.1) !important;
+    box-shadow: 0 0 20px rgba(0,245,255,0.3) !important;
+  }
+
+  /* PAGES */
+  .page { display: none; position: relative; z-index: 1; min-height: 100vh; }
+  .page.active { display: block; }
+
+  /* HERO */
+  #home {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 120px 60px 80px;
+    text-align: center;
+    position: relative;
+  }
+  #home.active { display: flex; }
+
+  .hero-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--neon-cyan);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    padding: 8px 20px;
+    border: 1px solid rgba(0,245,255,0.3);
+    border-radius: 20px;
+    background: rgba(0,245,255,0.05);
+    margin-bottom: 40px;
+    animation: fadeInDown 1s ease forwards;
+  }
+
+  .hero-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 900;
+    line-height: 1.0;
+    letter-spacing: -2px;
+    animation: fadeInUp 1s ease 0.3s forwards;
+    opacity: 0;
+  }
+
+  .hero-title .line1 { color: var(--star-white); display: block; }
+  .hero-title .line2 {
+    display: block;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+  }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--dim-star);
+    max-width: 600px;
+    margin: 30px auto;
+    line-height: 1.8;
+    font-weight: 300;
+    animation: fadeInUp 1s ease 0.6s forwards;
+    opacity: 0;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+    animation: fadeInUp 1s ease 0.9s forwards;
+    opacity: 0;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+    color: #000;
+    padding: 16px 40px;
+    border: none;
+    border-radius: 2px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: none;
+    transition: transform 0.3s, box-shadow 0.3s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 40px rgba(0,245,255,0.4);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--star-white);
+    padding: 16px 40px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 2px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: none;
+    transition: border-color 0.3s, background 0.3s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-ghost:hover {
+    border-color: var(--neon-purple);
+    background: rgba(191,0,255,0.1);
+  }
+
+  /* Orbiting ring decoration */
+  .orbit-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(0,245,255,0.08);
+    animation: spin linear infinite;
+    pointer-events: none;
+  }
+  .orbit-ring:nth-child(1) { width: 500px; height: 500px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-duration: 30s; }
+  .orbit-ring:nth-child(2) { width: 750px; height: 750px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-duration: 50s; border-color: rgba(191,0,255,0.06); }
+  .orbit-ring:nth-child(3) { width: 1050px; height: 1050px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-duration: 80s; }
+
+  @keyframes spin { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+
+  /* SERVICES GRID */
+  .services-section {
+    padding: 40px 60px 120px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 70px;
+  }
+
+  .section-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--neon-purple);
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 700;
+    color: var(--star-white);
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    max-width: 1300px;
+    margin: 0 auto;
+  }
+
+  .service-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 4px;
+    padding: 40px 36px;
+    position: relative;
+    overflow: hidden;
+    cursor: none;
+    transition: transform 0.4s, border-color 0.4s, box-shadow 0.4s;
+    text-decoration: none;
+    display: block;
+  }
+
+  .service-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--card-accent, var(--neon-cyan)), transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .service-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(255,255,255,0.15);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px var(--glow-color, var(--glow-cyan));
+  }
+  .service-card:hover::before { opacity: 1; }
+
+  .card-icon {
+    font-size: 2.8rem;
+    margin-bottom: 24px;
+    display: block;
+  }
+
+  .card-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim-star);
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+  }
+
+  .card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--star-white);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .card-sub {
+    font-size: 0.8rem;
+    color: var(--neon-cyan);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+
+  .card-desc {
+    color: var(--dim-star);
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .card-arrow {
+    position: absolute;
+    bottom: 28px; right: 28px;
+    font-size: 1.2rem;
+    color: var(--dim-star);
+    transition: color 0.3s, transform 0.3s;
+  }
+  .service-card:hover .card-arrow { color: var(--neon-cyan); transform: translate(4px, -4px); }
+
+  /* WHY SECTION */
+  .why-section {
+    padding: 100px 60px;
+    background: linear-gradient(180deg, transparent, rgba(0,245,255,0.02), transparent);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: center;
+  }
+
+  .why-text h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2rem, 3vw, 3rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 30px;
+  }
+  .why-text h2 em { font-style: normal; color: var(--neon-cyan); }
+
+  .why-text p {
+    color: var(--dim-star);
+    line-height: 1.9;
+    margin-bottom: 30px;
+  }
+
+  .why-items { display: flex; flex-direction: column; gap: 28px; }
+
+  .why-item {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 24px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px;
+    transition: border-color 0.3s;
+  }
+  .why-item:hover { border-color: rgba(0,245,255,0.2); }
+
+  .why-icon {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, rgba(0,245,255,0.1), rgba(191,0,255,0.1));
+    border: 1px solid rgba(0,245,255,0.2);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  .why-item-text h4 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    color: var(--star-white);
+    margin-bottom: 8px;
+  }
+  .why-item-text p { color: var(--dim-star); font-size: 0.875rem; line-height: 1.7; }
+
+  /* =================== SERVICE PAGES =================== */
+  .service-page {
+    min-height: 100vh;
+    padding: 120px 60px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .sp-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    max-width: 1300px;
+    margin: 0 auto 100px;
+    align-items: center;
+  }
+
+  .sp-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .sp-eyebrow::before { content: ''; height: 1px; width: 40px; background: currentColor; display: block; }
+
+  .sp-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    font-weight: 900;
+    line-height: 1.05;
+    margin-bottom: 24px;
+  }
+
+  .sp-desc {
+    color: var(--dim-star);
+    font-size: 1rem;
+    line-height: 1.9;
+    margin-bottom: 36px;
+  }
+
+  .sp-visual {
+    position: relative;
+    aspect-ratio: 1;
+    max-width: 500px;
+  }
+
+  .sp-visual-box {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(0,245,255,0.04), rgba(191,0,255,0.04));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sp-visual-box::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 30%, rgba(0,245,255,0.08), transparent 60%),
+                radial-gradient(circle at 70% 70%, rgba(191,0,255,0.08), transparent 60%);
+  }
+
+  .visual-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px dashed rgba(0,245,255,0.15);
+    animation: spinSlow linear infinite;
+  }
+
+  @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .sp-features {
+    max-width: 1300px;
+    margin: 0 auto 80px;
+  }
+
+  .sp-features-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    margin-bottom: 40px;
+    color: var(--star-white);
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .feature-item {
+    padding: 28px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .feature-item:hover { border-color: rgba(0,245,255,0.2); transform: translateY(-4px); }
+
+  .feature-icon { font-size: 1.8rem; margin-bottom: 16px; display: block; }
+  .feature-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    color: var(--star-white);
+    margin-bottom: 10px;
+  }
+  .feature-text { color: var(--dim-star); font-size: 0.85rem; line-height: 1.7; }
+
+  /* Portfolio/showcase strip */
+  .sp-showcase {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 60px 0;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .showcase-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  .showcase-item {
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, var(--c1, #060b1a), var(--c2, #1a0a2e));
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s;
+  }
+  .showcase-item:hover { transform: scale(1.03); }
+
+  .showcase-item::after {
+    content: attr(data-label);
+    position: absolute;
+    bottom: 12px; left: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* CONTACT / CTA */
+  .cta-section {
+    padding: 120px 60px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .cta-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 5rem);
+    font-weight: 900;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--neon-cyan), var(--star-white), var(--neon-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .cta-sub { color: var(--dim-star); font-size: 1rem; margin-bottom: 48px; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+  /* CONTACT PAGE */
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    max-width: 1200px;
+    margin: 60px auto 0;
+    align-items: start;
+  }
+
+  .contact-form { display: flex; flex-direction: column; gap: 20px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 8px; }
+  .form-group label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    color: var(--dim-star);
+    text-transform: uppercase;
+  }
+  .form-group input, .form-group textarea, .form-group select {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 2px;
+    padding: 14px 18px;
+    color: var(--star-white);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 0.95rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    outline: none;
+    cursor: none;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 0 2px rgba(0,245,255,0.1);
+  }
+  .form-group textarea { min-height: 140px; resize: vertical; }
+  .form-group select option { background: #060b1a; }
+
+  .contact-info { padding: 0; }
+  .contact-info-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: var(--star-white);
+    margin-bottom: 16px;
+  }
+  .contact-info p { color: var(--dim-star); line-height: 1.8; margin-bottom: 40px; }
+
+  .contact-items { display: flex; flex-direction: column; gap: 20px; }
+  .contact-item {
+    display: flex; gap: 16px; align-items: center;
+    padding: 20px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px;
+  }
+  .contact-item-icon {
+    width: 44px; height: 44px;
+    background: rgba(0,245,255,0.08);
+    border: 1px solid rgba(0,245,255,0.15);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
+  }
+  .contact-item h5 {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--dim-star);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .contact-item p { color: var(--star-white); font-size: 0.9rem; margin: 0; }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 60px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  footer p { color: var(--dim-star); font-size: 0.8rem; font-family: 'Space Mono', monospace; }
+
+  .footer-links { display: flex; gap: 30px; }
+  .footer-links a { color: var(--dim-star); text-decoration: none; font-size: 0.8rem; font-family: 'Space Mono', monospace; cursor: none; transition: color 0.3s; }
+  .footer-links a:hover { color: var(--neon-cyan); }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: rgba(255,255,255,0.05);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 80px;
+  }
+  .stat-item {
+    padding: 40px;
+    text-align: center;
+    background: var(--space-black);
+    position: relative;
+  }
+  .stat-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--neon-cyan);
+    display: block;
+    text-shadow: 0 0 30px rgba(0,245,255,0.5);
+  }
+  .stat-label { color: var(--dim-star); font-size: 0.8rem; font-family: 'Space Mono', monospace; letter-spacing: 2px; margin-top: 8px; }
+
+  /* BACK BTN */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--dim-star);
+    text-decoration: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 60px;
+    cursor: none;
+    transition: color 0.3s;
+  }
+  .back-btn:hover { color: var(--neon-cyan); }
+
+  /* ANIMATIONS */
+  @keyframes fadeInDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-15px)} }
+  @keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+  .float { animation: float 6s ease-in-out infinite; }
+
+  /* Nebula blobs */
+  .nebula {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.25;
+  }
+  .nebula-1 { width: 600px; height: 600px; background: radial-gradient(circle, #00f5ff22, transparent); top: -200px; right: -100px; }
+  .nebula-2 { width: 500px; height: 500px; background: radial-gradient(circle, #bf00ff22, transparent); bottom: -100px; left: -100px; }
+  .nebula-3 { width: 300px; height: 300px; background: radial-gradient(circle, #ffd70011, transparent); top: 50%; left: 20%; }
+
+  /* Responsive */
+  @media(max-width:900px){
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    .hero-title { font-size: clamp(2.5rem, 10vw, 5rem); }
+    .sp-hero { grid-template-columns: 1fr; gap: 40px; }
+    .sp-visual { display: none; }
+    .features-grid { grid-template-columns: 1fr; }
+    .why-grid { grid-template-columns: 1fr; gap: 40px; }
+    .contact-grid { grid-template-columns: 1fr; gap: 40px; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .service-page, .services-section, .why-section, .cta-section { padding-left: 24px; padding-right: 24px; }
+    .showcase-strip { grid-template-columns: 1fr 1fr; }
+    footer { padding: 40px 24px; flex-direction: column; align-items: flex-start; }
+  }
+
+  /* Hamburger for mobile */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: none;
+    padding: 4px;
+  }
+  .hamburger span {
+    display: block;
+    width: 24px; height: 2px;
+    background: var(--neon-cyan);
+    transition: 0.3s;
+  }
+  @media(max-width:900px){ .hamburger { display: flex; } }
+
+  /* Mobile menu */
+  .mobile-menu {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(3,0,10,0.97);
+    z-index: 999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: var(--star-white);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    cursor: none;
+    transition: color 0.3s;
+  }
+  .mobile-menu a:hover { color: var(--neon-cyan); }
+  .mobile-close {
+    position: absolute;
+    top: 24px; right: 24px;
+    font-size: 2rem;
+    color: var(--dim-star);
+    cursor: none;
+    background: none; border: none;
+  }
+
+  /* Glow text util */
+  .glow-cyan { color: var(--neon-cyan); text-shadow: 0 0 20px rgba(0,245,255,0.6); }
+  .glow-purple { color: var(--neon-purple); text-shadow: 0 0 20px rgba(191,0,255,0.6); }
+  .glow-gold { color: var(--neon-gold); text-shadow: 0 0 20px rgba(255,215,0,0.6); }
+
+  /* Particle dot decoration */
+  .dot-grid {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Custom Cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- Stars Background -->
+<canvas id="starsCanvas"></canvas>
+
+<!-- Nebula atmosphere -->
+<div class="nebula nebula-1"></div>
+<div class="nebula nebula-2"></div>
+<div class="nebula nebula-3"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo" onclick="showPage('home')">GRAVIX<span>360</span></a>
+  <ul class="nav-links">
+    <li><a href="#" onclick="showPage('home')">Home</a></li>
+    <li><a href="#" onclick="showPage('services')">Services</a></li>
+    <li><a href="#" onclick="showPage('web-design')">Web Design</a></li>
+    <li><a href="#" onclick="showPage('video-editing')">Video</a></li>
+    <li><a href="#" onclick="showPage('graphic-design')">Graphics</a></li>
+    <li><a href="#" onclick="showPage('cv-design')">CV</a></li>
+    <li><a href="#" onclick="showPage('social-media')">Social</a></li>
+    <li><a href="#" class="nav-cta" onclick="showPage('contact')">Launch Project</a></li>
+  </ul>
+  <button class="hamburger" onclick="toggleMobile()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-close" onclick="toggleMobile()">✕</button>
+  <a href="#" onclick="showPage('home');toggleMobile()">Home</a>
+  <a href="#" onclick="showPage('services');toggleMobile()">Services</a>
+  <a href="#" onclick="showPage('web-design');toggleMobile()">Web Design</a>
+  <a href="#" onclick="showPage('video-editing');toggleMobile()">Video Editing</a>
+  <a href="#" onclick="showPage('graphic-design')">Graphic Design</a>
+  <a href="#" onclick="showPage('cv-design');toggleMobile()">CV Design</a>
+  <a href="#" onclick="showPage('social-media');toggleMobile()">Social Media</a>
+  <a href="#" onclick="showPage('contact');toggleMobile()">Contact</a>
+</div>
+
+<!-- ============ HOME PAGE ============ -->
+<div id="home" class="page active">
+  <div class="orbit-ring"></div>
+  <div class="orbit-ring"></div>
+  <div class="orbit-ring"></div>
+  <div class="dot-grid"></div>
+
+  <div class="hero-badge">🌌 Digital Mission Control — Est. 2024</div>
+  <h1 class="hero-title">
+    <span class="line1">YOUR BRAND.</span>
+    <span class="line2">GRAVIX 360°</span>
+  </h1>
+  <p class="hero-sub">We don't just provide services — we launch brands into the digital galaxy. Break free from the gravity of ordinary design.</p>
+  <div class="hero-buttons">
+    <a href="#" class="btn-primary" onclick="showPage('services')">Explore Missions</a>
+    <a href="#" class="btn-ghost" onclick="showPage('contact')">Launch Project</a>
+  </div>
+
+  <!-- Stats -->
+  <div style="position:relative;z-index:1;width:100%;margin-top:100px;">
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-number">360°</span>
+        <div class="stat-label">Brand Vision</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">5+</span>
+        <div class="stat-label">Core Services</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">∞</span>
+        <div class="stat-label">Creative Limit</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">0g</span>
+        <div class="stat-label">Creative Gravity</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Services preview -->
+  <div class="services-section">
+    <div class="section-header">
+      <span class="section-tag">// Core Missions</span>
+      <h2 class="section-title">What We Do</h2>
+    </div>
+    <div class="services-grid">
+      <a href="#" class="service-card" style="--card-accent:var(--neon-cyan);--glow-color:var(--glow-cyan);" onclick="showPage('web-design')">
+        <span class="card-icon">🚀</span>
+        <div class="card-number">Mission 01</div>
+        <h3 class="card-title">Web & Portfolio Design</h3>
+        <div class="card-sub">Your Digital Planet</div>
+        <p class="card-desc">High-speed, stunning websites and portfolios. Your own home in the digital universe — crafted for artists, doctors, and business owners alike.</p>
+        <span class="card-arrow">↗</span>
+      </a>
+      <a href="#" class="service-card" style="--card-accent:#ff6b35;--glow-color:rgba(255,107,53,0.15);" onclick="showPage('video-editing')">
+        <span class="card-icon">🎬</span>
+        <div class="card-number">Mission 02</div>
+        <h3 class="card-title">Video Editing</h3>
+        <div class="card-sub" style="color:#ff6b35;">Cinematic Space-Time</div>
+        <p class="card-desc">Transform raw footage into high-energy, engaging stories. From YouTube to TikTok — we make your content shine like a supernova.</p>
+        <span class="card-arrow">↗</span>
+      </a>
+      <a href="#" class="service-card" style="--card-accent:var(--neon-purple);--glow-color:var(--glow-purple);" onclick="showPage('graphic-design')">
+        <span class="card-icon">🎨</span>
+        <div class="card-number">Mission 03</div>
+        <h3 class="card-title">Graphic Design</h3>
+        <div class="card-sub" style="color:var(--neon-purple);">Visual Orbit</div>
+        <p class="card-desc">Logo design, branding, and social media visuals. Designs that are visually light-years ahead of the competition.</p>
+        <span class="card-arrow">↗</span>
+      </a>
+      <a href="#" class="service-card" style="--card-accent:var(--neon-gold);--glow-color:rgba(255,215,0,0.12);" onclick="showPage('cv-design')">
+        <span class="card-icon">📄</span>
+        <div class="card-number">Mission 04</div>
+        <h3 class="card-title">CV Design</h3>
+        <div class="card-sub" style="color:var(--neon-gold);">The Launchpad</div>
+        <p class="card-desc">Professional, modern CVs that help individuals launch their careers to new heights. First impressions that get callbacks.</p>
+        <span class="card-arrow">↗</span>
+      </a>
+      <a href="#" class="service-card" style="--card-accent:#00ff87;--glow-color:rgba(0,255,135,0.12);" onclick="showPage('social-media')">
+        <span class="card-icon">📱</span>
+        <div class="card-number">Mission 05</div>
+        <h3 class="card-title">Social Media Management</h3>
+        <div class="card-sub" style="color:#00ff87;">Satellite Management</div>
+        <p class="card-desc">We manage your social presence, keeping your audience engaged while you focus on the big picture. Your brand stays always active.</p>
+        <span class="card-arrow">↗</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Why us -->
+  <div class="why-section">
+    <div class="why-grid">
+      <div class="why-text">
+        <h2>Why Choose <em>Gravix 360?</em></h2>
+        <p>We look at your brand from every angle, combining zero-gravity creativity with modern technology to build digital experiences that orbit far above the ordinary.</p>
+        <a href="#" class="btn-primary" onclick="showPage('contact')">Start Your Mission</a>
+      </div>
+      <div class="why-items">
+        <div class="why-item">
+          <div class="why-icon">🔭</div>
+          <div class="why-item-text">
+            <h4>360° Vision</h4>
+            <p>We look at your brand from every angle to ensure nothing is missed. Every pixel, every word, every interaction matters.</p>
+          </div>
+        </div>
+        <div class="why-item">
+          <div class="why-icon">⚡</div>
+          <div class="why-item-text">
+            <h4>Zero Gravity Creativity</h4>
+            <p>No limits to our ideas. If you can dream it, we can build it — and make it look extraordinary while doing so.</p>
+          </div>
+        </div>
+        <div class="why-item">
+          <div class="why-icon">🛸</div>
+          <div class="why-item-text">
+            <h4>Modern Technology</h4>
+            <p>We use the latest tools and techniques to ensure your business stays ahead in the ever-evolving digital race.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Final CTA -->
+  <div class="cta-section">
+    <h2 class="cta-title">Ready to<br>Launch?</h2>
+    <p class="cta-sub">Your brand deserves a universe of its own. Let's build it together.</p>
+    <a href="#" class="btn-primary" onclick="showPage('contact')">Begin Your Mission</a>
+  </div>
+</div>
+
+
+<!-- ============ SERVICES OVERVIEW ============ -->
+<div id="services" class="page service-page">
+  <div class="dot-grid"></div>
+  <div style="max-width:1300px;margin:0 auto;">
+    <a href="#" class="back-btn" onclick="showPage('home')">← Back to Home</a>
+    <div class="section-header" style="text-align:left;margin-bottom:60px;">
+      <span class="section-tag">// All Missions</span>
+      <h1 class="section-title">Core Services</h1>
+    </div>
+  </div>
+  <div class="services-section" style="padding-top:0;">
+    <div class="services-grid">
+      <a href="#" class="service-card" style="--card-accent:var(--neon-cyan);" onclick="showPage('web-design')"><span class="card-icon">🚀</span><div class="card-number">01</div><h3 class="card-title">Web & Portfolio Design</h3><p class="card-desc">High-speed websites and personal portfolios built for impact.</p><span class="card-arrow">↗</span></a>
+      <a href="#" class="service-card" style="--card-accent:#ff6b35;" onclick="showPage('video-editing')"><span class="card-icon">🎬</span><div class="card-number">02</div><h3 class="card-title">Video Editing</h3><p class="card-desc">Raw footage transformed into cinematic, viral-worthy content.</p><span class="card-arrow">↗</span></a>
+      <a href="#" class="service-card" style="--card-accent:var(--neon-purple);" onclick="showPage('graphic-design')"><span class="card-icon">🎨</span><div class="card-number">03</div><h3 class="card-title">Graphic Design</h3><p class="card-desc">Logos, branding and visuals light-years ahead of competition.</p><span class="card-arrow">↗</span></a>
+      <a href="#" class="service-card" style="--card-accent:var(--neon-gold);" onclick="showPage('cv-design')"><span class="card-icon">📄</span><div class="card-number">04</div><h3 class="card-title">CV Design</h3><p class="card-desc">Career-launching CVs that open doors and get callbacks.</p><span class="card-arrow">↗</span></a>
+      <a href="#" class="service-card" style="--card-accent:#00ff87;" onclick="showPage('social-media')"><span class="card-icon">📱</span><div class="card-number">05</div><h3 class="card-title">Social Media Management</h3><p class="card-desc">Full satellite management of your social media presence.</p><span class="card-arrow">↗</span></a>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============ WEB DESIGN PAGE ============ -->
+<div id="web-design" class="page service-page">
+  <div class="dot-grid"></div>
+  <a href="#" class="back-btn" onclick="showPage('home')">← Back</a>
+  <div class="sp-hero">
+    <div class="sp-content">
+      <div class="sp-eyebrow glow-cyan">Mission 01 // Web Design</div>
+      <h1 class="sp-title">Your <span class="glow-cyan">Digital</span><br>Planet</h1>
+      <p class="sp-desc">We build high-speed, stunning websites and personal portfolios that become your permanent home in the digital universe. Whether you're an artist, doctor, or business owner — we design worlds that convert visitors into loyal followers.</p>
+      <a href="#" class="btn-primary" onclick="showPage('contact')">Launch My Website</a>
+    </div>
+    <div class="sp-visual">
+      <div class="sp-visual-box float">
+        <div class="visual-ring" style="width:80%;height:80%;top:10%;left:10%;animation-duration:8s;"></div>
+        <div class="visual-ring" style="width:60%;height:60%;top:20%;left:20%;animation-duration:5s;animation-direction:reverse;border-style:dotted;"></div>
+        🌐
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-features">
+    <h2 class="sp-features-title">What's Included</h2>
+    <div class="features-grid">
+      <div class="feature-item">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-name">Lightning Performance</div>
+        <p class="feature-text">Optimized for blazing fast load times. Every millisecond matters for user retention and SEO rankings.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">📱</span>
+        <div class="feature-name">Fully Responsive</div>
+        <p class="feature-text">Pixel-perfect on every device — desktop, tablet, and mobile. Your visitors get the same stellar experience anywhere.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🎨</span>
+        <div class="feature-name">Custom Design</div>
+        <p class="feature-text">No templates. Every design is built from scratch around your brand identity, goals, and target audience.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🔍</span>
+        <div class="feature-name">SEO Optimized</div>
+        <p class="feature-text">Built with search engines in mind. Structured data, meta tags, and clean code help you rank and get discovered.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🛒</span>
+        <div class="feature-name">E-Commerce Ready</div>
+        <p class="feature-text">Need to sell? We integrate seamless shopping experiences with payment gateways, product pages, and cart systems.</p>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🔒</span>
+        <div class="feature-name">Secure & Reliable</div>
+        <p class="feature-text">SSL certificates, secure hosting setup, and regular maintenance options to keep your site safe 24/7.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-showcase">
+    <h2 class="sp-features-title">Sample Work Universe</h2>
+    <div class="showcase-strip">
+      <div class="showcase-item" style="--c1:#060b1a;--c2:#0a2040;" data-label="Portfolio Site">🎭</div>
+      <div class="showcase-item" style="--c1:#0a0620;--c2:#1a0a40;" data-label="Business Site">🏢</div>
+      <div class="showcase-item" style="--c1:#040820;--c2:#082040;" data-label="E-Commerce">🛍️</div>
+    </div>
+  </div>
+
+  <div class="cta-section">
+    <h2 class="cta-title">Ready to Go<br>Live?</h2>
+    <p class="cta-sub">Your digital planet awaits. Let's build something the universe has never seen.</p>
+    <a href="#" class="btn-primary" onclick="showPage('contact')">Start Your Project</a>
+  </div>
+</div>
+
+
+<!-- ============ VIDEO EDITING PAGE ============ -->
+<div id="video-editing" class="page service-page">
+  <div class="dot-grid"></div>
+  <a href="#" class="back-btn" onclick="showPage('home')">← Back</a>
+  <div class="sp-hero">
+    <div class="sp-content">
+      <div class="sp-eyebrow" style="color:#ff6b35;">Mission 02 // Video Editing</div>
+      <h1 class="sp-title">Cinematic <span style="color:#ff6b35;text-shadow:0 0 20px rgba(255,107,53,0.6);">Space-Time</span></h1>
+      <p class="sp-desc">We transform your raw footage into high-energy, cinematic stories. From YouTube tutorials to TikTok reels and brand films — we make your videos burn as bright as a supernova, leaving your audience wanting more.</p>
+      <a href="#" class="btn-primary" onclick="showPage('contact')" style="background:linear-gradient(135deg,#ff6b35,#ff0080);">Edit My Video</a>
+    </div>
+    <div class="sp-visual">
+      <div class="sp-visual-box float" style="background:linear-gradient(135deg,rgba(255,107,53,0.05),rgba(255,0,128,0.05));">
+        <div class="visual-ring" style="width:80%;height:80%;top:10%;left:10%;animation-duration:6s;border-color:rgba(255,107,53,0.2);"></div>
+        🎬
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-features">
+    <h2 class="sp-features-title">What We Edit</h2>
+    <div class="features-grid">
+      <div class="feature-item" style="border-color:rgba(255,107,53,0.1);">
+        <span class="feature-icon">📺</span>
+        <div class="feature-name">YouTube Videos</div>
+        <p class="feature-text">Long-form content edited for maximum retention — intros, cuts, B-roll, captions, and engaging thumbnails.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,107,53,0.1);">
+        <span class="feature-icon">📲</span>
+        <div class="feature-name">Short-Form / Reels</div>
+        <p class="feature-text">TikTok, Instagram Reels, YouTube Shorts — punchy, vertical edits that hook viewers in the first 3 seconds.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,107,53,0.1);">
+        <span class="feature-icon">🏢</span>
+        <div class="feature-name">Brand Films</div>
+        <p class="feature-text">Corporate videos, product showcases, and testimonial compilations that build authority and trust instantly.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,107,53,0.1);">
+        <span class="feature-icon">✨</span>
+        <div class="feature-name">Motion Graphics</div>
+        <p class="feature-text">Animated titles, lower thirds, transitions, and visual effects that add a professional cinematic layer to your content.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,107,53,0.1);">
+        <span class="feature-icon">🎵</span>
+        <div class="feature-name">Audio Mastering</div>
+        <p class="feature-text">Clean audio, background music syncing, sound effects, and voice-over integration for a polished final product.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,107,53,0.1);">
+        <span class="feature-icon">🌐</span>
+        <div class="feature-name">Multi-Platform Export</div>
+        <p class="feature-text">Delivered in the exact specs for every platform — 4K, 1080p, 16:9, 9:16, 1:1. Ready to post, ready to shine.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-showcase">
+    <h2 class="sp-features-title">Production Gallery</h2>
+    <div class="showcase-strip">
+      <div class="showcase-item" style="--c1:#150a00;--c2:#2a1000;" data-label="YouTube Series">🎥</div>
+      <div class="showcase-item" style="--c1:#150010;--c2:#2a0020;" data-label="Brand Film">🎞️</div>
+      <div class="showcase-item" style="--c1:#100015;--c2:#1a0030;" data-label="Social Reels">📲</div>
+    </div>
+  </div>
+
+  <div class="cta-section">
+    <h2 class="cta-title">Lights. Camera.<br><span style="color:#ff6b35;">Action.</span></h2>
+    <p class="cta-sub">Send us your footage and we'll turn it into content that can't be ignored.</p>
+    <a href="#" class="btn-primary" onclick="showPage('contact')" style="background:linear-gradient(135deg,#ff6b35,#ff0080);">Start Editing</a>
+  </div>
+</div>
+
+
+<!-- ============ GRAPHIC DESIGN PAGE ============ -->
+<div id="graphic-design" class="page service-page">
+  <div class="dot-grid"></div>
+  <a href="#" class="back-btn" onclick="showPage('home')">← Back</a>
+  <div class="sp-hero">
+    <div class="sp-content">
+      <div class="sp-eyebrow glow-purple">Mission 03 // Graphic Design</div>
+      <h1 class="sp-title">Visual <span class="glow-purple">Orbit</span></h1>
+      <p class="sp-desc">Logo design, brand identity, social media visuals, and print materials. We create designs that are visually light-years ahead of the competition — every piece a gravitational force that pulls your audience in.</p>
+      <a href="#" class="btn-primary" onclick="showPage('contact')" style="background:linear-gradient(135deg,var(--neon-purple),#ff0080);">Design My Brand</a>
+    </div>
+    <div class="sp-visual">
+      <div class="sp-visual-box float" style="background:linear-gradient(135deg,rgba(191,0,255,0.05),rgba(255,0,128,0.05));">
+        <div class="visual-ring" style="width:80%;height:80%;top:10%;left:10%;animation-duration:7s;border-color:rgba(191,0,255,0.2);"></div>
+        🎨
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-features">
+    <h2 class="sp-features-title">Design Services</h2>
+    <div class="features-grid">
+      <div class="feature-item" style="border-color:rgba(191,0,255,0.1);">
+        <span class="feature-icon">✍️</span>
+        <div class="feature-name">Logo Design</div>
+        <p class="feature-text">Iconic, timeless logos that capture your brand's soul in a single mark. Multiple concepts, unlimited revisions.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(191,0,255,0.1);">
+        <span class="feature-icon">🏷️</span>
+        <div class="feature-name">Brand Identity</div>
+        <p class="feature-text">Complete brand systems — color palettes, typography, guidelines, and assets that keep your identity consistent everywhere.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(191,0,255,0.1);">
+        <span class="feature-icon">📸</span>
+        <div class="feature-name">Social Media Visuals</div>
+        <p class="feature-text">Feed posts, stories, banners, cover photos — every format designed to stop the scroll and drive engagement.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(191,0,255,0.1);">
+        <span class="feature-icon">🖨️</span>
+        <div class="feature-name">Print Design</div>
+        <p class="feature-text">Flyers, business cards, banners, brochures, and packaging — print-ready files at professional quality.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(191,0,255,0.1);">
+        <span class="feature-icon">📣</span>
+        <div class="feature-name">Ad Creatives</div>
+        <p class="feature-text">High-converting ad designs for Facebook, Instagram, Google, and more. Visual hooks that turn scrollers into buyers.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(191,0,255,0.1);">
+        <span class="feature-icon">🌟</span>
+        <div class="feature-name">Illustrations</div>
+        <p class="feature-text">Custom digital illustrations and icons that give your brand a unique, ownable visual language no one else has.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-showcase">
+    <h2 class="sp-features-title">Visual Portfolio</h2>
+    <div class="showcase-strip">
+      <div class="showcase-item" style="--c1:#0a0020;--c2:#1a0040;" data-label="Brand Identity">🏷️</div>
+      <div class="showcase-item" style="--c1:#150020;--c2:#2a0040;" data-label="Social Media">📸</div>
+      <div class="showcase-item" style="--c1:#0a0015;--c2:#1a0030;" data-label="Logo Design">✍️</div>
+    </div>
+  </div>
+
+  <div class="cta-section">
+    <h2 class="cta-title">Design That<br><span class="glow-purple">Orbits.</span></h2>
+    <p class="cta-sub">Your brand needs a visual identity that's impossible to forget. Let's create it.</p>
+    <a href="#" class="btn-primary" onclick="showPage('contact')" style="background:linear-gradient(135deg,var(--neon-purple),#ff0080);">Start Designing</a>
+  </div>
+</div>
+
+
+<!-- ============ CV DESIGN PAGE ============ -->
+<div id="cv-design" class="page service-page">
+  <div class="dot-grid"></div>
+  <a href="#" class="back-btn" onclick="showPage('home')">← Back</a>
+  <div class="sp-hero">
+    <div class="sp-content">
+      <div class="sp-eyebrow glow-gold">Mission 04 // CV Design</div>
+      <h1 class="sp-title">Your Career <span class="glow-gold">Launchpad</span></h1>
+      <p class="sp-desc">We design professional, modern CVs that help individuals launch their careers to new heights. First impressions happen in 6 seconds — make yours count with a CV designed to get callbacks, not ignored.</p>
+      <a href="#" class="btn-primary" onclick="showPage('contact')" style="background:linear-gradient(135deg,#ffd700,#ff8c00);">Design My CV</a>
+    </div>
+    <div class="sp-visual">
+      <div class="sp-visual-box float" style="background:linear-gradient(135deg,rgba(255,215,0,0.05),rgba(255,140,0,0.05));">
+        <div class="visual-ring" style="width:80%;height:80%;top:10%;left:10%;animation-duration:9s;border-color:rgba(255,215,0,0.2);"></div>
+        📄
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-features">
+    <h2 class="sp-features-title">What You Get</h2>
+    <div class="features-grid">
+      <div class="feature-item" style="border-color:rgba(255,215,0,0.1);">
+        <span class="feature-icon">🎯</span>
+        <div class="feature-name">ATS-Friendly Design</div>
+        <p class="feature-text">Designed to pass Applicant Tracking Systems while still looking stunning to human recruiters. Best of both worlds.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,215,0,0.1);">
+        <span class="feature-icon">🎨</span>
+        <div class="feature-name">Custom Layouts</div>
+        <p class="feature-text">Unique, personalized layouts tailored to your industry — tech, creative, medical, business, academic, and more.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,215,0,0.1);">
+        <span class="feature-icon">✏️</span>
+        <div class="feature-name">Content Refinement</div>
+        <p class="feature-text">We help you word your experience, skills, and achievements in the language that gets attention from hiring managers.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,215,0,0.1);">
+        <span class="feature-icon">📎</span>
+        <div class="feature-name">Cover Letter</div>
+        <p class="feature-text">Matching cover letter design that completes your professional package and tells your story powerfully.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,215,0,0.1);">
+        <span class="feature-icon">🔗</span>
+        <div class="feature-name">LinkedIn Optimization</div>
+        <p class="feature-text">Guidance on aligning your LinkedIn profile to match your new CV for a cohesive professional presence online.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(255,215,0,0.1);">
+        <span class="feature-icon">📁</span>
+        <div class="feature-name">All File Formats</div>
+        <p class="feature-text">Delivered in PDF, Word (.docx), and editable source files so you can update it yourself anytime in the future.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-showcase">
+    <h2 class="sp-features-title">CV Styles</h2>
+    <div class="showcase-strip">
+      <div class="showcase-item" style="--c1:#100a00;--c2:#201500;" data-label="Modern Minimal">📋</div>
+      <div class="showcase-item" style="--c1:#151000;--c2:#251a00;" data-label="Creative Pro">🖊️</div>
+      <div class="showcase-item" style="--c1:#0a0800;--c2:#1a1200;" data-label="Executive">👔</div>
+    </div>
+  </div>
+
+  <div class="cta-section">
+    <h2 class="cta-title">Launch Your<br><span class="glow-gold">Career.</span></h2>
+    <p class="cta-sub">Your dream job deserves a CV that matches the ambition. Let's build your launchpad.</p>
+    <a href="#" class="btn-primary" onclick="showPage('contact')" style="background:linear-gradient(135deg,#ffd700,#ff8c00);">Get My CV</a>
+  </div>
+</div>
+
+
+<!-- ============ SOCIAL MEDIA PAGE ============ -->
+<div id="social-media" class="page service-page">
+  <div class="dot-grid"></div>
+  <a href="#" class="back-btn" onclick="showPage('home')">← Back</a>
+  <div class="sp-hero">
+    <div class="sp-content">
+      <div class="sp-eyebrow" style="color:#00ff87;">Mission 05 // Social Media</div>
+      <h1 class="sp-title">Satellite <span style="color:#00ff87;text-shadow:0 0 20px rgba(0,255,135,0.6);">Management</span></h1>
+      <p class="sp-desc">We manage your social media presence end-to-end, keeping your audience engaged, your brand active, and your content strategy sharp — while you stay focused on the big picture of running your business.</p>
+      <a href="#" class="btn-primary" onclick="showPage('contact')" style="background:linear-gradient(135deg,#00ff87,#00b4d8);">Manage My Pages</a>
+    </div>
+    <div class="sp-visual">
+      <div class="sp-visual-box float" style="background:linear-gradient(135deg,rgba(0,255,135,0.05),rgba(0,180,216,0.05));">
+        <div class="visual-ring" style="width:80%;height:80%;top:10%;left:10%;animation-duration:6s;border-color:rgba(0,255,135,0.2);"></div>
+        📱
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-features">
+    <h2 class="sp-features-title">What We Handle</h2>
+    <div class="features-grid">
+      <div class="feature-item" style="border-color:rgba(0,255,135,0.1);">
+        <span class="feature-icon">📅</span>
+        <div class="feature-name">Content Calendar</div>
+        <p class="feature-text">Strategic monthly content plans aligned to your brand goals, audience behavior, and trending moments.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(0,255,135,0.1);">
+        <span class="feature-icon">✍️</span>
+        <div class="feature-name">Content Creation</div>
+        <p class="feature-text">Captions, hashtags, graphics, and short videos — all produced and optimized for maximum reach and engagement.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(0,255,135,0.1);">
+        <span class="feature-icon">💬</span>
+        <div class="feature-name">Community Management</div>
+        <p class="feature-text">We respond to comments and messages to keep your audience feeling heard, valued, and connected to your brand.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(0,255,135,0.1);">
+        <span class="feature-icon">📊</span>
+        <div class="feature-name">Analytics & Reports</div>
+        <p class="feature-text">Monthly performance reports with insights on reach, engagement, follower growth, and content that converts.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(0,255,135,0.1);">
+        <span class="feature-icon">🚀</span>
+        <div class="feature-name">Growth Strategy</div>
+        <p class="feature-text">Data-driven strategies to organically grow your following and reach your ideal customers on the right platforms.</p>
+      </div>
+      <div class="feature-item" style="border-color:rgba(0,255,135,0.1);">
+        <span class="feature-icon">🎯</span>
+        <div class="feature-name">Paid Ad Support</div>
+        <p class="feature-text">Facebook and Instagram ad management — targeting, creative, budget allocation, and performance tracking.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-showcase">
+    <h2 class="sp-features-title">Platforms We Manage</h2>
+    <div class="showcase-strip">
+      <div class="showcase-item" style="--c1:#00080a;--c2:#001a20;" data-label="Facebook">👍</div>
+      <div class="showcase-item" style="--c1:#000a08;--c2:#001a10;" data-label="Instagram">📸</div>
+      <div class="showcase-item" style="--c1:#000515;--c2:#000a30;" data-label="TikTok">🎵</div>
+    </div>
+  </div>
+
+  <div class="cta-section">
+    <h2 class="cta-title">Stay In <span style="color:#00ff87;">Orbit.</span></h2>
+    <p class="cta-sub">Let us manage your digital presence while you focus on growing your business.</p>
+    <a href="#" class="btn-primary" onclick="showPage('contact')" style="background:linear-gradient(135deg,#00ff87,#00b4d8);">Get Started</a>
+  </div>
+</div>
+
+
+<!-- ============ CONTACT PAGE ============ -->
+<div id="contact" class="page service-page">
+  <div class="dot-grid"></div>
+  <a href="#" class="back-btn" onclick="showPage('home')">← Back</a>
+  <div class="section-header" style="text-align:left;max-width:1200px;margin:0 auto 20px;">
+    <span class="section-tag">// Initiate Contact</span>
+    <h1 class="section-title">Launch Your<br><span class="glow-cyan">Mission</span></h1>
+  </div>
+
+  <div class="contact-grid">
+    <form class="contact-form" onsubmit="handleContact(event)">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" placeholder="Your name" required>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" placeholder="your@email.com" required>
+      </div>
+      <div class="form-group">
+        <label>Select Mission</label>
+        <select>
+          <option>Web & Portfolio Design</option>
+          <option>Video Editing</option>
+          <option>Graphic Design</option>
+          <option>CV Design</option>
+          <option>Social Media Management</option>
+          <option>Multiple Services</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Budget Range</label>
+        <select>
+          <option>Under $200</option>
+          <option>$200 – $500</option>
+          <option>$500 – $1,000</option>
+          <option>$1,000+</option>
+          <option>Let's discuss</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Mission Briefing</label>
+        <textarea placeholder="Tell us about your project, goals, and timeline..."></textarea>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;text-align:center;border:none;">
+        🚀 Launch Mission
+      </button>
+    </form>
+
+    <div class="contact-info">
+      <h2 class="contact-info-title">Mission Control</h2>
+      <p>Ready to take your brand into orbit? Fill out the briefing form or reach out directly through any of the channels below. We typically respond within 24 hours.</p>
+
+      <div class="contact-items">
+        <div class="contact-item">
+          <div class="contact-item-icon">📧</div>
+          <div>
+            <h5>Email</h5>
+            <p>hello@gravix360.com</p>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">📱</div>
+          <div>
+            <h5>WhatsApp</h5>
+            <p>+94 77 XXX XXXX</p>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">📘</div>
+          <div>
+            <h5>Facebook</h5>
+            <p>@Gravix360Agency</p>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-item-icon">⏱️</div>
+          <div>
+            <h5>Response Time</h5>
+            <p>Within 24 hours</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success message hidden -->
+  <div id="successMsg" style="display:none;text-align:center;padding:60px;max-width:600px;margin:60px auto;">
+    <div style="font-size:4rem;margin-bottom:20px;">🚀</div>
+    <h2 style="font-family:'Orbitron',sans-serif;color:var(--neon-cyan);margin-bottom:16px;">Mission Received!</h2>
+    <p style="color:var(--dim-star);line-height:1.8;">Your briefing has been transmitted to Mission Control. We'll be in touch within 24 hours to begin your launch sequence.</p>
+  </div>
+</div>
+
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <a href="#" class="logo" style="font-size:1.1rem;margin-bottom:8px;display:block;" onclick="showPage('home')">GRAVIX<span>360</span></a>
+    <p>Your Digital Mission Control © 2024</p>
+  </div>
+  <div class="footer-links">
+    <a href="#" onclick="showPage('web-design')">Web Design</a>
+    <a href="#" onclick="showPage('video-editing')">Video</a>
+    <a href="#" onclick="showPage('graphic-design')">Graphics</a>
+    <a href="#" onclick="showPage('cv-design')">CV</a>
+    <a href="#" onclick="showPage('social-media')">Social</a>
+    <a href="#" onclick="showPage('contact')">Contact</a>
+  </div>
+  <p style="color:var(--dim-star);font-size:0.75rem;">Zero Gravity Creativity · 360° Vision · Modern Technology</p>
+</footer>
+
+
+<script>
+// ——— PAGE ROUTING ———
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(id);
+  if(target) {
+    target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+// ——— MOBILE MENU ———
+function toggleMobile() {
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+
+// ——— CONTACT FORM ———
+function handleContact(e) {
+  e.preventDefault();
+  e.target.style.display = 'none';
+  document.getElementById('successMsg').style.display = 'block';
+}
+
+// ——— CUSTOM CURSOR ———
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx - 6 + 'px';
+  cursor.style.top = my - 6 + 'px';
+});
+
+function animateRing() {
+  rx += (mx - rx - 18) * 0.12;
+  ry += (my - ry - 18) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top = ry + 'px';
+  requestAnimationFrame(animateRing);
+}
+animateRing();
+
+document.querySelectorAll('a, button, .service-card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.style.transform = 'scale(2)';
+    ring.style.width = '60px';
+    ring.style.height = '60px';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursor.style.transform = 'scale(1)';
+    ring.style.width = '36px';
+    ring.style.height = '36px';
+  });
+});
+
+// ——— STAR FIELD ———
+const canvas = document.getElementById('starsCanvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const stars = Array.from({ length: 280 }, () => ({
+  x: Math.random() * window.innerWidth,
+  y: Math.random() * window.innerHeight,
+  r: Math.random() * 1.5,
+  a: Math.random(),
+  speed: Math.random() * 0.004 + 0.001,
+  twinkle: Math.random() * Math.PI * 2
+}));
+
+// Shooting stars
+const shoots = [];
+function spawnShoot() {
+  shoots.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height * 0.5,
+    len: Math.random() * 120 + 60,
+    speed: Math.random() * 8 + 6,
+    a: 1,
+    angle: Math.PI / 5
+  });
+  setTimeout(spawnShoot, Math.random() * 5000 + 3000);
+}
+spawnShoot();
+
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  stars.forEach(s => {
+    s.twinkle += s.speed;
+    const alpha = s.a * (0.5 + 0.5 * Math.sin(s.twinkle));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200, 220, 255, ${alpha})`;
+    ctx.fill();
+  });
+
+  // Shooting stars
+  for (let i = shoots.length - 1; i >= 0; i--) {
+    const s = shoots[i];
+    const grad = ctx.createLinearGradient(s.x, s.y,
+      s.x - Math.cos(s.angle) * s.len,
+      s.y - Math.sin(s.angle) * s.len);
+    grad.addColorStop(0, `rgba(0,245,255,${s.a})`);
+    grad.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.x - Math.cos(s.angle) * s.len, s.y - Math.sin(s.angle) * s.len);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    s.x += Math.cos(s.angle) * s.speed;
+    s.y += Math.sin(s.angle) * s.speed;
+    s.a -= 0.018;
+    if (s.a <= 0) shoots.splice(i, 1);
+  }
+
+  requestAnimationFrame(drawStars);
+}
+drawStars();
+
+// ——— SCROLL REVEAL ———
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.service-card, .feature-item, .why-item, .stat-item, .showcase-item').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
